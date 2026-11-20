@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BrowserRouter, Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth';
 import { configured, supabase } from './lib/api';
@@ -15,6 +15,20 @@ const TABS = [
   { to: '/schedule', label: 'Schedule', icon: '▦' },
   { to: '/tasks', label: 'Tasks', icon: '✓' },
 ];
+
+const THEMES = ['system', 'light', 'dark'] as const;
+type Theme = typeof THEMES[number];
+
+function ThemeButton() {
+  const [theme, setTheme] = useState<Theme>(() => (document.documentElement.dataset.theme as Theme) ?? 'system');
+  const cycle = () => {
+    const next = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
+    if (next === 'system') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = next;
+    try { if (next === 'system') localStorage.removeItem('theme'); else localStorage.setItem('theme', next); } catch { /* private mode: theme just won't persist */ }
+    setTheme(next);
+  };
+  return <button type="button" onClick={cycle}>Theme: {theme[0].toUpperCase() + theme.slice(1)}</button>;
+}
 
 function ProfileMenu() {
   const { profile, isAdmin } = useAuth();
@@ -36,6 +50,7 @@ function ProfileMenu() {
         <NavLink to="/account">Account settings</NavLink>
         <NavLink to="/notes">Notes & announcements</NavLink>
         {isAdmin && <NavLink to="/volunteers">Manage volunteers</NavLink>}
+        <ThemeButton />
         <button type="button" onClick={() => supabase.auth.signOut()}>Sign out</button>
       </div>
     </details>
